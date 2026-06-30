@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Naraya Chatbot</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e8e8e8;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 720px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #161616;
+      border-left: 1px solid #222;
+      border-right: 1px solid #222;
+    }
+
+    /* Header */
+    #header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #222;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #161616;
+    }
+
+    #header .avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    #header .info h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f0f0f0;
+    }
+
+    #header .info span {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      background: #22c55e;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    /* API Key Bar */
+    #api-bar {
+      padding: 10px 20px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #222;
+      display: flex;
+      gap: 8px;
+    }
+
+    #api-bar input {
+      flex: 1;
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #e8e8e8;
+      font-size: 13px;
+      outline: none;
+    }
+
+    #api-bar input:focus { border-color: #6366f1; }
+
+    #api-bar input::placeholder { color: #4b5563; }
+
+    #save-key {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #save-key:hover { background: #4f46e5; }
+
+    /* Messages */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+      gap: 4px;
+    }
+
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.assistant { align-self: flex-start; align-items: flex-start; }
+
+    .bubble {
+      padding: 11px 15px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user .bubble {
+      background: #6366f1;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.assistant .bubble {
+      background: #1f1f1f;
+      color: #e0e0e0;
+      border: 1px solid #2a2a2a;
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg-time {
+      font-size: 11px;
+      color: #4b5563;
+      padding: 0 4px;
+    }
+
+    /* Typing indicator */
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+
+    .typing-dots span {
+      width: 7px;
+      height: 7px;
+      background: #6366f1;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Empty state */
+    #empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #4b5563;
+      text-align: center;
+      padding: 40px;
+    }
+
+    #empty .icon { font-size: 40px; }
+    #empty p { font-size: 14px; line-height: 1.6; }
+
+    /* Input area */
+    #input-area {
+      padding: 14px 20px;
+      border-top: 1px solid #222;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      background: #161616;
+    }
+
+    #user-input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 11px 14px;
+      color: #e8e8e8;
+      font-size: 14px;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.5;
+      font-family: inherit;
+    }
+
+    #user-input:focus { border-color: #6366f1; }
+    #user-input::placeholder { color: #4b5563; }
+
+    #send-btn {
+      background: #6366f1;
+      border: none;
+      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    #send-btn:hover { background: #4f46e5; }
+    #send-btn:disabled { background: #2a2a2a; cursor: not-allowed; }
+
+    #send-btn svg { fill: white; width: 18px; height: 18px; }
+
+    .error-msg {
+      background: #2d1515;
+      border: 1px solid #7f1d1d;
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div id="header">
+    <div class="avatar">🤖</div>
+    <div class="info">
+      <h2>Naraya AI</h2>
+      <span><span class="status-dot"></span>DeepSeek-3.2 &middot; Online</span>
+    </div>
+  </div>
+
+  <!-- API Key -->
+  <div id="api-bar">
+    <input type="password" id="api-key-input" placeholder="Apni Naraya API key daalein  (sk-nry-...)" />
+    <button id="save-key">Save</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="messages">
+    <div id="empty">
+      <div class="icon">💬</div>
+      <p>API key save karke baat shuru karein.<br/>Main aapki madad ke liye hoon!</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div id="input-area">
+    <textarea id="user-input" placeholder="Kuch bhi poochein..." rows="1"></textarea>
+    <button id="send-btn" disabled>
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  let apiKey = '';
+  let history = [];
+  let isLoading = false;
+
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+  const emptyEl = document.getElementById('empty');
+  const apiKeyInput = document.getElementById('api-key-input');
+  const saveKeyBtn = document.getElementById('save-key');
+
+  // Auto-resize textarea
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+    sendBtn.disabled = !inputEl.value.trim() || !apiKey || isLoading;
+  });
+
+  // Send on Enter (Shift+Enter for newline)
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) sendMessage();
+    }
+  });
+
+  saveKeyBtn.addEventListener('click', () => {
+    const val = apiKeyInput.value.trim();
+    if (!val) return;
+    apiKey = val;
+    saveKeyBtn.textContent = '✓ Saved';
+    saveKeyBtn.style.background = '#16a34a';
+    setTimeout(() => {
+      saveKeyBtn.textContent = 'Save';
+      saveKeyBtn.style.background = '';
+    }, 2000);
+    sendBtn.disabled = !inputEl.value.trim();
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  function getTime() {
+    return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function appendMessage(role, content, isError = false) {
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+
+    const bubble = document.createElement('div');
+    bubble.className = isError ? 'bubble error-msg' : 'bubble';
+    bubble.textContent = content;
+
+    const time = document.createElement('span');
+    time.className = 'msg-time';
+    time.textContent = getTime();
+
+    div.appendChild(bubble);
+    div.appendChild(time);
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
+
+  function showTyping() {
+    const div = document.createElement('div');
+    div.className = 'msg assistant';
+    div.id = 'typing-indicator';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble typing-dots';
+    bubble.innerHTML = '<span></span><span></span><span></span>';
+
+    div.appendChild(bubble);
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text || !apiKey || isLoading) return;
+
+    isLoading = true;
+    sendBtn.disabled = true;
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+
+    appendMessage('user', text);
+    history.push({ role: 'user', content: text });
+
+    showTyping();
+
+    try {
+      const response = await fetch('https://router.bynara.id/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'mimo-v2.5-free',
+          messages: history,
+          stream: false
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || `Error ${response.status}`);
+      }
+
+      const reply = data.choices[0].message.content;
+      history.push({ role: 'assistant', content: reply });
+
+      removeTyping();
+      appendMessage('assistant', reply);
+
+    } catch (err) {
+      removeTyping();
+      appendMessage('assistant', `⚠️ Error: ${err.message}`, true);
+    }
+
+    isLoading = false;
+    sendBtn.disabled = !inputEl.value.trim();
+    inputEl.focus();
+  }
+</script>
+</body>
+</html>
